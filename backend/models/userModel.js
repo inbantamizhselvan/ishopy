@@ -7,9 +7,9 @@ const userSchema = new mongoose.Schema({
     phone: {type: Number},
     address: {type:Object},
     joined: {type: Date, default: Date.now},
+    verified: {type:Boolean, default:false},
     cartData: {type:Object, default: {}},
 }, {minimize:false});
 
 const userModel = mongoose.models.user || mongoose.model('user', userSchema);
-
 export default userModel;

@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-export const sendEmailToSubscribers = async (email, name, subject, emailMessage, emailHTML) => {
+export const sendEmailToSubscribers = async ({email, subject, emailMessage, emailHTML}) => {
     try {
         const mailOptions = {
             from: '"IShopY" <contact.ishopy@gmail.com>', 
@@ -17,8 +17,6 @@ export const sendEmailToSubscribers = async (email, name, subject, emailMessage,
             text: emailMessage, 
             html: emailHTML,
         };
-            
-            // Send email
             await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error('Error sending email:', error);

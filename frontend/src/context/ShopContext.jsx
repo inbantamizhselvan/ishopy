@@ -106,6 +106,18 @@ const ShopContextProvider = (props) => {
   }, []);
 
   useEffect(() => {
+    if (token) {
+      localStorage.setItem("token", token);
+      const tokenTimeout = setTimeout(() => {
+        setToken("");
+        localStorage.removeItem("token"); 
+        toast.info("Your session has expired. Please login again.");
+      }, 10000); 
+      return () => clearTimeout(tokenTimeout);
+    }
+  }, [token]);
+
+  useEffect(() => {
     if (!token && localStorage.getItem("token")) {
       setToken(localStorage.getItem("token"));
       getUserCart(localStorage.getItem("token"));

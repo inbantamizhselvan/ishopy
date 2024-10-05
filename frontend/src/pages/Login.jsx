@@ -5,45 +5,68 @@ import axios from "axios";
 
 const Login = () => {
   const [currentState, setCurrentState] = useState('Login');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { token, setToken, navigate, backendURL} = useContext(ShopContext);
-
+  const [name, setName] = useState(''); 
+  const [email, setEmail] = useState(''); 
+  const [password, setPassword] = useState(''); 
+  const [otp, setOtp] = useState(''); 
+  const [isOtpSent, setIsOtpSent] = useState(false); 
+  const { token, setToken, navigate, backendURL } = useContext(ShopContext); 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
+
     try {
       if (currentState === 'Sign Up') {
-        const response = await axios .post(backendURL + '/api/user/register', {name, email, password});
-        if(response.data.success){
-          setToken(response.data.token);
-          localStorage.setItem('token', response.data.token);
-        }
-        else{
-          toast.error(response.data.message);
+        if (isOtpSent) {
+          console.log("hello")
+          const response = await axios.post(`${backendURL}/api/user/verifyotp`, { email, otp });
+          console.log(response.data);
+          if (response.data.success) {
+            console.log(response.data);
+            toast.success("Account created successfully! You can now login.");
+            setEmail('');
+            setName('');
+            setPassword('');
+            setOtp('');
+            setCurrentState('Login'); 
+            setIsOtpSent(false);
+          } else {
+            toast.error(response.data.message);
+          }
+        } else {
+          const response = await axios.post(`${backendURL}/api/user/register`, { name, email, password });
+          if (response.data.success) {
+            toast.success(response.data.message);
+            setIsOtpSent(true); 
+          } else {
+            toast.error(response.data.message);
+          }
         }
       } else {
-        const response = await axios.post(backendURL + '/api/user/login', {email, password});
+        const response = await axios.post(`${backendURL}/api/user/login`, { email, password });
         if (response.data.success) {
-          setToken(response.data.token);
-          localStorage.setItem('token', response.data.token);
-        }
-        else{
-          toast.error(response.data.message);
+          setToken(response.data.token); 
+          localStorage.setItem('token', response.data.token); 
+          toast.success("Login successful!");
+          navigate('/'); 
+        } else {
+          setName('');
+          setEmail('');
+          setPassword('');
+          setOtp('');
+          toast.error(response.data.message); 
         }
       }
-      
     } catch (error) {
       console.log(error);
-      toast.error(error.message);
+      toast.error(error.message); 
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
     if (token) {
       navigate('/');
     }
-  })
+  }, [token, navigate]);
 
   return (
     <div className="flex justify-center items-center p-10 bg-cover bg-center" 
@@ -53,7 +76,7 @@ const Login = () => {
         <hr className='border-none h-[2px] w-12 bg-purple-600 mx-auto mb-4' />
 
         <form onSubmit={onSubmitHandler}>
-          {currentState === 'Sign Up' && (
+          {currentState === 'Sign Up' && !isOtpSent && (
             <input
               required
               className='w-full px-4 py-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition duration-300 transform hover:scale-105'
@@ -73,32 +96,54 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          <input
-            required
-            className='w-full px-4 py-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition duration-300 transform hover:scale-105'
-            type="password"
-            placeholder='Password'
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {!isOtpSent && (
+            <input
+              required
+              className='w-full px-4 py-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition duration-300 transform hover:scale-105'
+              type="password"
+              placeholder='Password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
 
-          <div className='flex flex-col justify-between text-sm mt-4'>
-            <p className='text-purple-600 hover:underline cursor-pointer text-center'>Forgot Password?</p>
-            <p 
-              onClick={() => setCurrentState(currentState === 'Login' ? 'Sign Up' : 'Login')}
-              className='text-purple-600 hover:underline cursor-pointer text-center'
+          {isOtpSent && currentState === 'Sign Up' && (
+            <input
+              required
+              className='w-full px-4 py-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition duration-300 transform hover:scale-105'
+              type="text"
+              placeholder='Enter OTP'
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+          )}
+
+          <div className='flex flex-col items-center'>
+            <button
+              type="submit"
+              className="w-full bg-purple-600 text-white font-semibold px-4 py-3 rounded-lg hover:bg-purple-700 transition duration-300 transform hover:scale-105 mb-4"
             >
-              {currentState === 'Login' ? 'Create Account' : 'Login Here!'}
-            </p>
-          </div>
+              {currentState === 'Sign Up' ? (isOtpSent ? 'Verify OTP' : 'Sign Up') : 'Login'}
+            </button>
 
-          <button type="submit" className='bg-purple-600 text-white font-semibold py-3 rounded-lg mt-6 w-full transition duration-300 hover:bg-purple-700 transform hover:scale-105'>
-            {currentState === 'Login' ? 'Sign In' : 'Sign Up'}
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentState(currentState === 'Sign Up' ? 'Login' : 'Sign Up');
+                setIsOtpSent(false);
+                setEmail('');
+                setPassword('');
+                setName('');
+              }}
+              className="text-purple-600 font-semibold hover:underline"
+            >
+              {currentState === 'Sign Up' ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
   );
-}
+};
 
 export default Login;
