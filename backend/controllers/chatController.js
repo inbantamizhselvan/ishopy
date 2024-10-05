@@ -1,4 +1,4 @@
-import chatModel from "../models/chatmodel.js";
+import chatModel from "../models/chatModel.js";
 import userModel from "../models/userModel.js";
 
 const getAllChats = async (req, res) => {
