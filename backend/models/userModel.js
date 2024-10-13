@@ -9,6 +9,9 @@ const userSchema = new mongoose.Schema({
     joined: {type: Date, default: Date.now},
     verified: {type:Boolean, default:false},
     cartData: {type:Object, default: {}},
+    oneTimeToken: {type:String, expiresAt: 1000},
+    deviceIp : {type:Array}
+
 }, {minimize:false});
 
 const userModel = mongoose.models.user || mongoose.model('user', userSchema);

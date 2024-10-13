@@ -112,7 +112,7 @@ const ShopContextProvider = (props) => {
         setToken("");
         localStorage.removeItem("token"); 
         toast.info("Your session has expired. Please login again.");
-      }, 10000); 
+      }, 50000000);
       return () => clearTimeout(tokenTimeout);
     }
   }, [token]);
