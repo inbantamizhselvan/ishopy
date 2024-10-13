@@ -7,12 +7,12 @@ import otpModel from "../models/otpModel.js";
 import { sendEmailToSubscribers } from "./sendEmailController.js";
 
 
-const createToken = (id) =>{
-    return jwt.sign({id}, process.env.JWT_SECRET)
+const createToken = (id, email) =>{
+    return jwt.sign({id, email}, process.env.JWT_SECRET, {expiresIn: '1hr'});
 }
 const loginUser = async (req, res) => {
     try {
-        const {email, password} = req.body;
+        const {email, password, localIp} = req.body;
         const user = await userModel.findOne({email});
         if (!user) {
             return res.json({success:false, message:"User does not exists, Sign Up"})
@@ -23,8 +23,15 @@ const loginUser = async (req, res) => {
         }
         const isMatch = await bcrypt.compare(password, user.password);
         if (isMatch) {
-            const token = createToken(user._id);
-            res.json({success:true, token});
+            let deviceMessage = "You are logged in.";
+            if (localIp !== user.deviceIp[0]) {
+                deviceMessage = "You are trying to log in from a new device, is this you?";
+            }
+            await userModel.findOneAndUpdate({email}, {
+                deviceIp: [localIp],
+            });
+            const token = createToken(user._id, email);
+            res.json({success:true, token, message: deviceMessage});
         }
         else{
             res.json({success:false, message:"Invalid Credentials"})
@@ -95,7 +102,6 @@ const registerUser = async (req, res) => {
 const verifyOTP = async (req, res) => {
     try {
         const {email, otp} = req.body;
-        console.log(otp);
         const isValid = await otpModel.findOne({email});
         console.log(isValid);
         if (isValid.otp === Number(otp)) {
@@ -138,17 +144,24 @@ const getUserProfile = async (req, res) => {
             return res.json({success: false, message: "User not found"});
         }
         const orders = await orderModel.find({userId});
+        const oneTimeToken = createToken(userId);
+        await userModel.findByIdAndUpdate(userId,{
+            oneTimeToken,
+        }
+    )
         res.json({
             success: true,
             user: {
+                id: userId,
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
                 address: user.address,
                 joined:user.joined,
                 cartData: user.cartData,
+                oneTimeLoginToken: oneTimeToken,
             },
-            orders
+            orders,
         });
     } catch (error) {
         console.log(error);
@@ -180,5 +193,35 @@ const editUserProfile = async (req, res) => {
     }
 };
 
+const qrLogin = async (req, res) => {
+    try {
+      const { userId, token, localIp } = req.body;
+  
+      if (!userId || !token) {
+        return res.json({ success: false, message: "Missing userId or token." });
+      }
+      let device;
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.json({ success: false, message: "User not found." });
+      }      
+      const isValidToken = jwt.verify(token, process.env.JWT_SECRET); 
+      if (isValidToken) {
+        let deviceMessage = "You are logged in.";
+        if (localIp !== user.deviceIp[0]) {
+            deviceMessage = "You are trying to log in from a new device, is this you?";
+        }
+        await userModel.findByIdAndUpdate(userId, {
+            deviceIp: [localIp],
+        })
+        return res.json({ success: true, token: createToken(user._id, email), message: deviceMessage });
+      } else {
+        return res.json({ success: false, message: "Invalid token." });
+      }
+    } catch (error) {
+      console.error("QR login error:", error);
+      res.json({ success: false, message: error.message });
+    }
+  };
 
-export {getUserProfile, loginUser, registerUser, adminLogin, editUserProfile, verifyOTP};
+export {getUserProfile, loginUser, registerUser, adminLogin, editUserProfile, verifyOTP, qrLogin};

@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Chat from "./pages/Chat";
 import Home from "./pages/Home";
 import SendOffers from "./pages/SendOffers";
+import AdminChatPresets from "./pages/AdminChatPresets";
 
 export const backendURL = process.env.REACT_APP_BACKEND_URL;
 export const currency = '$';
@@ -40,6 +41,7 @@ const App = () => {
                 <Route path="/orders" element={<Orders token={token}/>} />
                 <Route path="/chat" element={<Chat token={token} />} />
                 <Route path="/sendoffers" element={<SendOffers token={token} />} />
+                <Route path="/chatpresets" element={<AdminChatPresets token={token} />} />
               </Routes>
             </div>
           </div>
