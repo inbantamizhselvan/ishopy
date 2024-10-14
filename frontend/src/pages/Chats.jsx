@@ -236,7 +236,7 @@ const Login = () => {
                   onError={(err) => console.error(err)}
                   onScan={(data) => handleQrScan(data)}
                   style={{ width: "100%" }}
-                  facingMode="environment"
+                  facingMode="rear"
                 />
               </div>
             )}
