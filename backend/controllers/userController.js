@@ -7,8 +7,8 @@ import otpModel from "../models/otpModel.js";
 import { sendEmailToSubscribers } from "./sendEmailController.js";
 
 
-const createToken = (id, email) =>{
-    return jwt.sign({id, email}, process.env.JWT_SECRET, {expiresIn: '1hr'});
+const createToken = (id) =>{
+    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1hr'});
 }
 const loginUser = async (req, res) => {
     try {
@@ -30,7 +30,7 @@ const loginUser = async (req, res) => {
             await userModel.findOneAndUpdate({email}, {
                 deviceIp: [localIp],
             });
-            const token = createToken(user._id, email);
+            const token = createToken(user._id);
             res.json({success:true, token, message: deviceMessage});
         }
         else{
@@ -214,7 +214,7 @@ const qrLogin = async (req, res) => {
         await userModel.findByIdAndUpdate(userId, {
             deviceIp: [localIp],
         })
-        return res.json({ success: true, token: createToken(user._id, email), message: deviceMessage });
+        return res.json({ success: true, token: createToken(user._id), message: deviceMessage });
       } else {
         return res.json({ success: false, message: "Invalid token." });
       }
