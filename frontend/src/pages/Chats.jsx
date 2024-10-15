@@ -12,6 +12,7 @@ const Login = () => {
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [facingMode, setFacingMode] = useState("environment"); // Front or back camera mode
   const { token, setToken, navigate, backendURL } = useContext(ShopContext);
   const [localIp, setLocalIp] = useState("");
 
@@ -232,12 +233,22 @@ const Login = () => {
             {isQrScannerOpen && (
               <div className="mt-4">
                 <QrScanner
-                  delay={1000} 
+                  delay={1000}
                   onError={(err) => console.error(err)}
                   onScan={(data) => handleQrScan(data)}
                   style={{ width: "100%" }}
-                  facingMode="rear"
+                  facingMode={facingMode} // Camera mode set here
                 />
+                <button
+                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                  onClick={() =>
+                    setFacingMode(
+                      facingMode === "environment" ? "user" : "environment"
+                    )
+                  }
+                >
+                  Flip Camera
+                </button>
               </div>
             )}
           </div>

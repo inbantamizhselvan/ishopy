@@ -18,10 +18,12 @@ import Verify from './pages/Verify';
 import MyProfile from "./pages/MyProfile"
 import OrderDetails from './pages/OrderDetails';
 import Chats from './pages/Chats';
+import IPInfo from 'ip-info-react';
 
 const App = () => {
   return (
       <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
+        <IPInfo>
         <ToastContainer />
         <Navbar />
         <SearchBar />
@@ -41,6 +43,7 @@ const App = () => {
           <Route path='/chats' element={<Chats />} />
         </Routes>
         <Footer />
+        </IPInfo>
       </div>
   );
 }
