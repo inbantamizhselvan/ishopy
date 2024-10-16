@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import axios from "axios";
-import QrScanner from "react-qr-scanner";
-import { IPInfoContext } from 'ip-info-react';
+import { QrReader } from 'react-qr-reader';
+import { IPInfoContext } from "ip-info-react";
 
 const Login = () => {
   const [currentState, setCurrentState] = useState("Login");
@@ -17,6 +17,8 @@ const Login = () => {
   const { token, setToken, navigate, backendURL } = useContext(ShopContext);
   const [localIp, setLocalIp] = useState("");
   const userInfo = useContext(IPInfoContext);
+  const [qrTimeoutId, setQrTimeoutId] = useState(null);
+  const [isScanned, setIsScanned] = useState(false);
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
@@ -70,10 +72,11 @@ const Login = () => {
     }
   };
 
-  const handleQrScan = async (data) => {
-    if (data) {
+  const handleQrScan = async (result) => {
+    if (result?.text && !isScanned) { 
       try {
-        const scannedData = JSON.parse(data.text);
+        setIsScanned(true); 
+        const scannedData = JSON.parse(result.text);
         const { userId, token } = scannedData;
         if (!userId || !token) {
           return toast.error("Invalid QR code data. Please try again.");
@@ -87,6 +90,7 @@ const Login = () => {
           setToken(response.data.token);
           localStorage.setItem("token", response.data.token);
           toast.success("Login successful!");
+          setIsQrScannerOpen(false); 
           navigate("/");
         } else {
           toast.error(response.data.message);
@@ -111,33 +115,35 @@ const Login = () => {
     }
   }, [token, navigate]);
 
-  // useEffect(() => {
-  //   const getLocalIP = async () => {
-  //     const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/;
-
-  //     const pc = new RTCPeerConnection({ iceServers: [] });
-  //     pc.createDataChannel("");
-  //     pc.createOffer().then((offer) => pc.setLocalDescription(offer));
-
-  //     pc.onicecandidate = (ice) => {
-  //       if (ice && ice.candidate && ice.candidate.candidate) {
-  //         const ipMatch = ipRegex.exec(ice.candidate.candidate);
-  //         if (ipMatch) {
-  //           setLocalIp(ipMatch[0]);
-  //           pc.onicecandidate = null;
-  //         }
-  //       }
-  //     };
-  //   };
-
-  //   getLocalIP();
-  // }, [token]);
-
   useEffect(() => {
     setLocalIp(userInfo);
-  }, [token]);
+  }, [userInfo]);
 
   const isMobile = window.innerWidth <= 768;
+
+  const startQrTimeout = () => {
+    if (qrTimeoutId) {
+      clearTimeout(qrTimeoutId);
+    }
+    const timeoutId = setTimeout(() => {
+      if (!isScanned) {
+        toast.info("QR scan timed out. Please try again.");
+      }
+      setIsQrScannerOpen(false); 
+    }, 30000); 
+    setQrTimeoutId(timeoutId);
+  };
+
+  const handleQrScannerToggle = () => {
+    if (isQrScannerOpen) {
+      clearTimeout(qrTimeoutId);
+      setQrTimeoutId(null);
+      setIsScanned(false); 
+    } else {
+      startQrTimeout(); 
+    }
+    setIsQrScannerOpen(!isQrScannerOpen);
+  };
 
   return (
     <div
@@ -231,30 +237,19 @@ const Login = () => {
           <div className="mt-6 text-center">
             <button
               className="bg-green-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300"
-              onClick={() => setIsQrScannerOpen(!isQrScannerOpen)}
+              onClick={handleQrScannerToggle}
             >
-              {isQrScannerOpen ? "Close QR Scanner" : "Scan QR to Login"}
+              {isQrScannerOpen ? "Close QR Scanner" : "Open QR Scanner"}
             </button>
 
             {isQrScannerOpen && (
-              <div className="mt-4">
-                <QrScanner
-                  delay={1000}
-                  onError={(err) => console.error(err)}
-                  onScan={(data) => handleQrScan(data)}
-                  style={{ width: "100%" }}
-                  facingMode={facingMode} // Camera mode set here
+              <div className="w-full max-w-xs mt-4 mx-auto">
+                <QrReader
+                  scanDelay={500}
+                  facingMode={facingMode}
+                  onResult={(result) => handleQrScan(result)}
+                  className="w-full h-auto"
                 />
-                <button
-                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-                  onClick={() =>
-                    setFacingMode(
-                      facingMode === "environment" ? "user" : "environment"
-                    )
-                  }
-                >
-                  Flip Camera
-                </button>
               </div>
             )}
           </div>

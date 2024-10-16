@@ -16,29 +16,30 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.json({
         success: false,
-        message: "User does not exists, Sign Up",
+        message: "User does not exist, Sign Up",
       });
     }
     const verified = user.verified;
     if (!verified) {
       return res.json({
         success: false,
-        message: "you didn't verify your email",
+        message: "You didn't verify your email",
       });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
+      const isExistingDevice = user.deviceIp.some((device) => device.ip === localIp);
       let deviceMessage = "You are logged in.";
-      if (localIp !== user.deviceIp[0].ip) {
-        deviceMessage =
-          "You are trying to log in from a new device, is this you?";
+
+      if (!isExistingDevice) {
+        deviceMessage = "You are trying to log in from a new device, is this you?";
+
+        await userModel.findOneAndUpdate(
+          { email },
+          { $addToSet: { deviceIp: localIp } } 
+        );
       }
-      await userModel.findOneAndUpdate(
-        { email },
-        {
-          deviceIp: [...user.deviceIp, localIp],
-        }
-      );
+
       const token = createToken(user._id);
       res.json({ success: true, token, message: deviceMessage });
     } else {
@@ -172,10 +173,13 @@ const getUserProfile = async (req, res) => {
       return res.json({ success: false, message: "User not found" });
     }
     const orders = await orderModel.find({ userId });
-    const oneTimeToken = createToken(userId);
-    await userModel.findByIdAndUpdate(userId, {
-      oneTimeToken,
-    });
+    const currentTime = new Date();
+    if (!user.oneTimeToken || user.oneTimeTokenExpires < currentTime) {
+      const oneTimeToken = createToken(userId);
+      user.oneTimeToken = oneTimeToken;
+      user.oneTimeTokenExpires = new Date(currentTime.getTime() + 15 * 60 * 1000);
+      await user.save(); 
+    }
     res.json({
       success: true,
       user: {
@@ -186,7 +190,7 @@ const getUserProfile = async (req, res) => {
         address: user.address,
         joined: user.joined,
         cartData: user.cartData,
-        oneTimeLoginToken: oneTimeToken,
+        oneTimeLoginToken: user.oneTimeToken,
       },
       orders,
     });
@@ -231,22 +235,26 @@ const qrLogin = async (req, res) => {
     if (!userId || !token) {
       return res.json({ success: false, message: "Missing userId or token." });
     }
-    let device;
+
     const user = await userModel.findById(userId);
     if (!user) {
       return res.json({ success: false, message: "User not found." });
     }
+
     const isValidToken = jwt.verify(token, process.env.JWT_SECRET);
     if (isValidToken) {
       if (user.oneTimeToken === token) {
+        const isExistingDevice = user.deviceIp.some((device) => device.ip === localIp);
+        console.log(isExistingDevice)
         let deviceMessage = "You are logged in.";
-        if (localIp !== user.deviceIp[0].ip) {
-          deviceMessage =
-            "You are trying to log in from a new device, is this you?";
+        if (!isExistingDevice) {
+          deviceMessage = "You are trying to log in from a new device, is this you?";
+          await userModel.findOneAndUpdate(
+            { email: user.email },
+            { $addToSet: { deviceIp: localIp } }
+          );
         }
-        await userModel.findByIdAndUpdate(userId, {
-          deviceIp: [...user.deviceIp, localIp],
-        });
+
         return res.json({
           success: true,
           token: createToken(user._id),
