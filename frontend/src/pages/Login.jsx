@@ -73,18 +73,21 @@ const Login = () => {
 
   const handleQrScan = async (result) => {
     if (result?.text && !isScanned) {
+      setIsScanned(true);
       try {
-        setIsScanned(true);
         const scannedData = JSON.parse(result.text);
         const { userId, token } = scannedData;
+  
         if (!userId || !token) {
           return toast.error("Invalid QR code data. Please try again.");
         }
+  
         const response = await axios.post(`${backendURL}/api/user/qrlogin`, {
           userId,
           token,
           localIp,
         });
+  
         if (response.data.success) {
           setToken(response.data.token);
           localStorage.setItem("token", response.data.token);
@@ -239,7 +242,10 @@ const Login = () => {
                     audio: false,
                     video: { facingMode: facingMode },
                   }}
-                  onResult={(result) => handleQrScan(result)}
+                  onScan={(result) => {
+                    console.log(result);
+                    handleQrScan(result);
+                  }}
                   onError={(error) => console.log(error?.message)}
                   className="w-full h-auto"
                 />
