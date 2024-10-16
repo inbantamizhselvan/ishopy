@@ -7,7 +7,7 @@ import otpModel from "../models/otpModel.js";
 import { sendEmailToSubscribers } from "./sendEmailController.js";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1hr" });
+  return jwt.sign({ id }, process.env.JWT_SECRET);
 };
 const loginUser = async (req, res) => {
   try {
@@ -123,7 +123,6 @@ const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const isValid = await otpModel.findOne({ email });
-    console.log(isValid);
     if (isValid.otp === Number(otp)) {
       const newUser = new userModel({
         name: isValid.name,
@@ -245,7 +244,6 @@ const qrLogin = async (req, res) => {
     if (isValidToken) {
       if (user.oneTimeToken === token) {
         const isExistingDevice = user.deviceIp.some((device) => device.ip === localIp);
-        console.log(isExistingDevice)
         let deviceMessage = "You are logged in.";
         if (!isExistingDevice) {
           deviceMessage = "You are trying to log in from a new device, is this you?";

@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { QrReader } from 'react-qr-reader';
+import QrScanner from 'react-qr-scanner';
 import { IPInfoContext } from "ip-info-react";
 
 const Login = () => {
@@ -17,7 +17,6 @@ const Login = () => {
   const { token, setToken, navigate, backendURL } = useContext(ShopContext);
   const [localIp, setLocalIp] = useState("");
   const userInfo = useContext(IPInfoContext);
-  const [qrTimeoutId, setQrTimeoutId] = useState(null);
   const [isScanned, setIsScanned] = useState(false);
 
   const onSubmitHandler = async (event) => {
@@ -73,9 +72,9 @@ const Login = () => {
   };
 
   const handleQrScan = async (result) => {
-    if (result?.text && !isScanned) { 
+    if (result?.text && !isScanned) {
       try {
-        setIsScanned(true); 
+        setIsScanned(true);
         const scannedData = JSON.parse(result.text);
         const { userId, token } = scannedData;
         if (!userId || !token) {
@@ -90,7 +89,7 @@ const Login = () => {
           setToken(response.data.token);
           localStorage.setItem("token", response.data.token);
           toast.success("Login successful!");
-          setIsQrScannerOpen(false); 
+          setIsQrScannerOpen(false);
           navigate("/");
         } else {
           toast.error(response.data.message);
@@ -121,28 +120,9 @@ const Login = () => {
 
   const isMobile = window.innerWidth <= 768;
 
-  const startQrTimeout = () => {
-    if (qrTimeoutId) {
-      clearTimeout(qrTimeoutId);
-    }
-    const timeoutId = setTimeout(() => {
-      if (!isScanned) {
-        toast.info("QR scan timed out. Please try again.");
-      }
-      setIsQrScannerOpen(false); 
-    }, 30000); 
-    setQrTimeoutId(timeoutId);
-  };
-
   const handleQrScannerToggle = () => {
-    if (isQrScannerOpen) {
-      clearTimeout(qrTimeoutId);
-      setQrTimeoutId(null);
-      setIsScanned(false); 
-    } else {
-      startQrTimeout(); 
-    }
-    setIsQrScannerOpen(!isQrScannerOpen);
+    setIsQrScannerOpen((prev) => !prev);
+    setIsScanned(false); 
   };
 
   return (
@@ -244,10 +224,23 @@ const Login = () => {
 
             {isQrScannerOpen && (
               <div className="w-full max-w-xs mt-4 mx-auto">
-                <QrReader
+                <select
+                  onChange={(e) => setFacingMode(e.target.value)}
+                  value={facingMode}
+                  className="mb-4 p-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="environment">Back Camera</option>
+                  <option value="user">Front Camera</option>
+                </select>
+
+                <QrScanner
                   scanDelay={500}
-                  facingMode={facingMode}
+                  constraints={{
+                    audio: false,
+                    video: { facingMode: facingMode },
+                  }}
                   onResult={(result) => handleQrScan(result)}
+                  onError={(error) => console.log(error?.message)}
                   className="w-full h-auto"
                 />
               </div>

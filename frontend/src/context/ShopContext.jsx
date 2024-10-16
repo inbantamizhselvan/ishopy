@@ -13,7 +13,12 @@ const ShopContextProvider = (props) => {
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
   const [products, setProducts] = useState([]);
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(() => {
+    const savedToken = localStorage.getItem("token");
+    const savedExpiry = localStorage.getItem("tokenExpiry");
+    // Check if the token is expired
+    return (savedToken && savedExpiry && Date.now() < savedExpiry) ? savedToken : "";
+  });
   const navigate = useNavigate();
   const [newMessagesCount, setNewMessagesCount] = useState(0);
 
@@ -63,7 +68,6 @@ const ShopContextProvider = (props) => {
     return totalCount;
   };
 
-
   const getProductData = async () => {
     try {
       const response = await axios.get(backendURL + "/api/product/list");
@@ -78,51 +82,74 @@ const ShopContextProvider = (props) => {
     }
   };
 
-  const getUserCart = async (token) =>{
+  const getUserCart = async (token) => {
     try {
-        const response = await axios.post(backendURL + '/api/cart/get', {}, {headers: {token}});
-        if(response.data.success){
-            setCartItems(response.data.cartData);
-        }
+      const response = await axios.post(backendURL + '/api/cart/get', {}, { headers: { token } });
+      if (response.data.success) {
+        setCartItems(response.data.cartData);
+      }
     } catch (error) {
-        console.log(error);
-        toast.error(error.message);
+      console.log(error);
+      toast.error(error.message);
     }
-  }
+  };
+
   const getUserMessages = async (token) => {
-    try{
-      const response = await axios.post(backendURL + '/api/chats/messagecount', {}, {headers: {token}});
+    try {
+      const response = await axios.post(backendURL + '/api/chats/messagecount', {}, { headers: { token } });
       if (response.data.success) {
         setNewMessagesCount(response.data.messageCount);
       }
-    } catch(error){
+    } catch (error) {
       console.log(error);
     }
-  }
+  };
 
   useEffect(() => {
     getProductData();
-    getUserMessages();
   }, []);
 
   useEffect(() => {
     if (token) {
+      // Set the token in local storage along with its expiration time
       localStorage.setItem("token", token);
+      localStorage.setItem("tokenExpiry", Date.now() + 3600000); // 1 hour expiry
+      getUserCart(token);
+      getUserMessages(token);
+
       const tokenTimeout = setTimeout(() => {
         setToken("");
-        localStorage.removeItem("token"); 
+        localStorage.removeItem("token");
+        localStorage.removeItem("tokenExpiry");
         toast.info("Your session has expired. Please login again.");
-      }, 50000000);
+      }, 3600000); // Same duration as the token expiry
+
       return () => clearTimeout(tokenTimeout);
     }
   }, [token]);
 
   useEffect(() => {
-    if (!token && localStorage.getItem("token")) {
-      setToken(localStorage.getItem("token"));
-      getUserCart(localStorage.getItem("token"));
-      getUserMessages(localStorage.getItem("token"));
-    }
+    const handleStorageChange = (event) => {
+      if (event.key === "token") {
+        const newToken = event.newValue;
+        if (newToken) {
+          setToken(newToken);
+          getUserCart(newToken);
+          getUserMessages(newToken);
+        } else {
+          setToken("");
+          localStorage.removeItem("tokenExpiry"); // Clear expiry if token is cleared
+        }
+      }
+    };
+
+    // Listen to storage changes (for when localStorage changes in other tabs/windows)
+    window.addEventListener("storage", handleStorageChange);
+
+    // On component unmount, remove the event listener
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const updateQuantity = async (itemId, size, quantity) => {
@@ -131,12 +158,12 @@ const ShopContextProvider = (props) => {
     setCartItems(cartData);
 
     if (token) {
-        try {
-            await axios.post(backendURL + '/api/cart/update', {itemId, size, quantity}, {headers: {token}});
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
-        }
+      try {
+        await axios.post(backendURL + '/api/cart/update', { itemId, size, quantity }, { headers: { token } });
+      } catch (error) {
+        console.log(error);
+        toast.error(error.message);
+      }
     }
   };
 
@@ -174,12 +201,11 @@ const ShopContextProvider = (props) => {
     setToken,
     token,
     getUserMessages,
-    newMessagesCount, 
+    newMessagesCount,
     setNewMessagesCount,
   };
-  return (
-    <ShopContext.Provider value={value}>{props.children}</ShopContext.Provider>
-  );
+
+  return <ShopContext.Provider value={value}>{props.children}</ShopContext.Provider>;
 };
 
 export default ShopContextProvider;
