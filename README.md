@@ -162,6 +162,13 @@ Make sure to replace the placeholder values with your own.
 ### Admin Dashboard:
 ![image](https://github.com/user-attachments/assets/fd0392e3-fdee-4a62-88b4-a1b669a3f0c7)
 
+### Login using QR:
+The users can login their devices without any password by just scanning the QR on the profile from the logged device.
+![image](https://github.com/user-attachments/assets/dbc54b14-d097-49f5-bb46-d4444f869e44)
+
+In the other device which needs to be logged in just press the scan QR button to scan the QR , thats it all set you will be logged in now!
+![image](https://github.com/user-attachments/assets/787af3f6-c90e-4bb8-b081-d038bb8f06a4)
+
 
 ## Contributing:
 ### We welcome contributions to improve IShopY. If you'd like to contribute, please follow these steps:
