@@ -9,24 +9,48 @@ import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import chatRouter from "./routes/chatRoute.js";
 
-//APP CONFIG
-const app = express()
+// APP CONFIG
+const app = express();
 const port = process.env.PORT || 4000;
 connectDB();
 connectCloudinary();
 
-//middleware
-app.use(express.json());
-app.use(cors());
+// --- FIXED CORS CONFIGURATION ---
+const allowedOrigins = [
+    'https://ishopy-frontend.vercel.app', // Your production frontend
+    'http://localhost:5173'               // Your local development
+];
 
-//api endpoints
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(new Error('CORS policy: This origin is not allowed'), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Handle the manual preflight (OPTIONS) request
+// This is critical for Vercel deployments!
+app.options('*', cors()); 
+// ---------------------------------
+
+app.use(express.json());
+
+// api endpoints
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/chats', chatRouter);
-app.get('/', (req, res)=>{
-    res.send("API Working")
+
+app.get('/', (req, res) => {
+    res.send("API Working");
 });
 
-app.listen(port, ()=> console.log('SERVER STARTED ON PORT : '+ port));
+app.listen(port, () => console.log('SERVER STARTED ON PORT : ' + port));
