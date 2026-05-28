@@ -22,16 +22,14 @@ const sendOffers = async (req, res) => {
 
     for (const subscriber of subscribers) {
       const email = subscriber.email;
-      const name = subscriber.name;
 
       try {
-        await sendEmailToSubscribers(
+        await sendEmailToSubscribers({
           email,
-          name,
           subject,
-          offerMessage,
-          offerHTML,
-        );
+          emailMessage: offerMessage,
+          emailHTML: offerHTML,
+        });
       } catch (err) {
         console.error(`Error sending email to ${email}:`, err);
       }

@@ -123,6 +123,13 @@ const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const isValid = await otpModel.findOne({ email });
+    if (!isValid) {
+      return res.json({
+        success: false,
+        message: "OTP expired or request not found. Please sign up again.",
+      });
+    }
+
     if (isValid.otp === Number(otp)) {
       const newUser = new userModel({
         name: isValid.name,
@@ -136,7 +143,13 @@ const verifyOTP = async (req, res) => {
         success: true,
         message: "Your account is created successfully, you can login now!",
       });
+      return;
     }
+
+    return res.json({
+      success: false,
+      message: "Invalid OTP. Please check and try again.",
+    });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

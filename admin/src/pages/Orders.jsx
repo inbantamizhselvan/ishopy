@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { currency } from "../App";
 import { toast } from "react-toastify";
 import { assets } from "../assets/assets";
 import axios from "axios";
+import { backendURL } from "../App";
 
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchAllOrders = async () => {
+  const fetchAllOrders = useCallback(async () => {
     if (!token) {
       return null;
     }
     try {
       const response = await axios.post(
-        "http://localhost:4000" + "/api/order/list",
+        `${backendURL}/api/order/list`,
         {},
         { headers: { token } }
       );
@@ -26,12 +27,12 @@ const Orders = ({ token }) => {
     } catch (error) {
       toast.error(error.message);
     }
-  };
+  }, [token]);
 
   const statusHandler = async (event, orderId) => {
     try {
       const response = await axios.post(
-        "http://localhost:4000" + "/api/order/status",
+        `${backendURL}/api/order/status`,
         { orderId, status: event.target.value },
         { headers: { token } }
       );
@@ -59,7 +60,7 @@ const Orders = ({ token }) => {
 
   useEffect(() => {
     fetchAllOrders();
-  }, [token]);
+  }, [token, fetchAllOrders]);
 
   const filteredOrders = orders.filter((order) => {
     return (

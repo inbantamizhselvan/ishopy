@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import axios from "axios";
@@ -11,39 +11,38 @@ const Orders = () => {
   const [orderData, setOrderData] = useState([]);
   const navigate = useNavigate(); 
   const [print, setPrint] = useState();
-  const loadOrderData = async () => {
+  const loadOrderData = useCallback(async () => {
     try {
       if (!token) {
         return null;
       }
       const response = await axios.post(backendURL + '/api/order/userorders', {}, { headers: { token } });
       if (response.data.success) {
-        let allOrdersItem = [];
-        response.data.orders.map((order) => {
-          order.items.map((item) => {
-            item['orderId'] = order._id;
-            item['status'] = order.status;
-            item['payment'] = order.payment;
-            item['paymentMethod'] = order.paymentMethod;
-            item['date'] = order.date;
-            item['firstName'] = order.address.firstName;
-            item['lastName'] = order.address.lastName;
-            item['email'] = order.address.email;
-            item['street'] = order.address.street;
-            item['city'] = order.address.city;
-            item['state'] = order.address.state;
-            item['zipcode'] = order.address.zipcode;
-            item['country'] = order.address.country;
-            item['phone'] = order.address.phone;
-            allOrdersItem.push(item); 
-          })
-        });
+        const allOrdersItem = response.data.orders.flatMap((order) =>
+          order.items.map((item) => ({
+            ...item,
+            orderId: order._id,
+            status: order.status,
+            payment: order.payment,
+            paymentMethod: order.paymentMethod,
+            date: order.date,
+            firstName: order.address.firstName,
+            lastName: order.address.lastName,
+            email: order.address.email,
+            street: order.address.street,
+            city: order.address.city,
+            state: order.address.state,
+            zipcode: order.address.zipcode,
+            country: order.address.country,
+            phone: order.address.phone,
+          }))
+        );
         setOrderData(allOrdersItem.reverse());
       }
     } catch (error) {
       toast.error(error.message);
     }
-  };
+  }, [backendURL, token]);
 
   const handleViewOrder = (orderId) => {
     navigate(`/order/${orderId}`);
@@ -51,7 +50,7 @@ const Orders = () => {
 
   useEffect(() => {
     loadOrderData();
-  }, [token]);
+  }, [loadOrderData]);
 
   return (
     <div className='border-t pt-16 bg-gradient-to-b from-purple-50 to-white'>

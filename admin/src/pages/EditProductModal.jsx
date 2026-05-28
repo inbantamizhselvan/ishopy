@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { assets } from '../assets/assets';
 
 const EditProductModal = ({ product, onSubmit, onClose }) => {
