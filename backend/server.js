@@ -12,33 +12,41 @@ import chatRouter from "./routes/chatRoute.js";
 // APP CONFIG
 const app = express();
 const port = process.env.PORT || 4000;
-connectDB();
+connectDB().catch((error) => {
+    console.error("Database connection failed:", error.message);
+});
 connectCloudinary();
 
-// --- FIXED CORS CONFIGURATION ---
 const allowedOrigins = [
-    'https://ishopy-frontend.vercel.app', // Your production frontend
-    'http://localhost:5173'               // Your local development
+    "https://ishopy-frontend.vercel.app",
+    "https://ishopy-frontend-inbantamizhselvans-projects.vercel.app",
+    "https://ishopy-admin.vercel.app",
+    "https://ishopy-admin-inbantamizhselvans-projects.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:5173",
 ];
 
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            return callback(new Error('CORS policy: This origin is not allowed'), false);
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow non-browser clients with no Origin header.
+        if (!origin) {
+            return callback(null, true);
         }
-        return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("CORS policy: This origin is not allowed"), false);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token", "X-Requested-With"],
+};
 
-// Handle the manual preflight (OPTIONS) request
-// This is critical for Vercel deployments!
-app.options('*', cors()); 
-// ---------------------------------
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
@@ -53,4 +61,12 @@ app.get('/', (req, res) => {
     res.send("API Working");
 });
 
-app.listen(port, () => console.log('SERVER STARTED ON PORT : ' + port));
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, message: "API healthy" });
+});
+
+if (!process.env.VERCEL) {
+    app.listen(port, () => console.log('SERVER STARTED ON PORT : ' + port));
+}
+
+export default app;
