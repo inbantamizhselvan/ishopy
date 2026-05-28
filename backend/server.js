@@ -50,6 +50,22 @@ app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, message: "API healthy" });
+});
+
+app.use('/api', async (req, res, next) => {
+    try {
+        await connectDB();
+        return next();
+    } catch (error) {
+        return res.status(503).json({
+            success: false,
+            message: "Database unavailable. Please retry in a moment.",
+        });
+    }
+});
+
 // api endpoints
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
@@ -59,10 +75,6 @@ app.use('/api/chats', chatRouter);
 
 app.get('/', (req, res) => {
     res.send("API Working");
-});
-
-app.get('/api/health', (req, res) => {
-    res.json({ success: true, message: "API healthy" });
 });
 
 if (!process.env.VERCEL) {
